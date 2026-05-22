@@ -1,11 +1,9 @@
 <!-- SYNC IMPACT REPORT
-Version change: [TEMPLATE] → 1.0.0
-Modified principles: N/A (initial population from template)
-Added sections:
-  - Core Principles (I. Clean Architecture, II. Data Access, III. Authentication & Authorization,
-    IV. API Documentation, V. Unit Testing)
-  - Constraints & Standards
-  - Governance
+Version change: 1.0.0 → 1.1.0
+Modified principles:
+  - II. Data Access — added IIdentityService carve-out for user management
+  - III. Authentication & Authorization — added ASP.NET Core Identity rules
+Added sections: N/A
 Removed sections: N/A
 Templates requiring updates:
   - .specify/templates/plan-template.md ⚠️ pending — source tree includes tests/integration/ which
@@ -14,7 +12,7 @@ Templates requiring updates:
     "Integration test" entries that violate the unit-only policy; replace with unit test examples
   - .specify/templates/spec-template.md ✅ no changes required
   - .specify/templates/checklist-template.md ✅ no changes required
-Follow-up TODOs: None — all placeholders resolved
+Follow-up TODOs: None
 -->
 
 # Lumen Constitution
@@ -32,8 +30,9 @@ Controllers are REQUIRED — Minimal API endpoints are NOT permitted. Every cont
 thin: routing, model binding, and response shaping only. Business logic MUST reside exclusively
 in the Application layer.
 
-The Repository pattern MUST be used for all data access. Repository interfaces are DEFINED in
-the Application layer and IMPLEMENTED in the Infrastructure layer.
+The Repository pattern MUST be used for all domain data access. Repository interfaces are
+DEFINED in the Application layer and IMPLEMENTED in the Infrastructure layer. User management
+is the sole exception — it MUST use `IIdentityService` (see Section III).
 
 ### II. Data Access
 
@@ -43,6 +42,10 @@ data access library are PROHIBITED.
 All database interactions MUST go through repository interfaces. Direct `DbContext` usage is
 FORBIDDEN outside of the Infrastructure layer. The Application layer MUST NOT contain any
 data access or EF Core references.
+
+User management is exempt from the repository pattern — `IIdentityService` (Application) /
+`IdentityService` (Infrastructure) is the mandated abstraction. A `UserRepository` MUST NOT
+be created; `UserManager<ApplicationUser>` already fulfils that role internally.
 
 EF Core migrations MUST live in the Infrastructure project and be applied via the
 `dotnet ef` CLI targeting the API startup project.
@@ -57,6 +60,24 @@ explicitly declared with `[AllowAnonymous]` — implicit open access is PROHIBIT
 
 JWT configuration (issuer, audience, signing key) MUST be supplied via `appsettings` or
 environment variables and MUST NOT be hardcoded.
+
+**Identity (user management layer)**
+
+ASP.NET Core Identity is used exclusively as a user management and password hashing library —
+NOT for cookie authentication or UI scaffolding. The following rules apply:
+
+- `AddIdentityCore<ApplicationUser>` MUST be used — `AddIdentity` is PROHIBITED (it adds
+  cookie/sign-in overhead incompatible with a JWT API).
+- `ApplicationUser : IdentityUser` MUST live in `Lumen.Infrastructure.Identity` — it MUST NOT
+  be placed in Domain or Application.
+- All user write operations (create, password change, role assignment) MUST go through
+  `UserManager<ApplicationUser>` — direct `DbContext` writes to `AspNetUsers` are PROHIBITED.
+- Complex user read queries (filtering, pagination, joins) MUST use `DbContext` directly inside
+  `IdentityService` — `UserManager` does not expose `IQueryable`.
+- The Application layer MUST reference only `IIdentityService` — it MUST NOT reference
+  `UserManager`, `RoleManager`, `AppDbContext`, or any Identity type.
+- The initial admin account MUST be bootstrapped via `AdminSeeder` at startup — it is
+  idempotent and runs before `app.Run()` inside a scoped DI scope.
 
 ### IV. API Documentation
 

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-Lumen is a .NET 10 ASP.NET Core Web API following a Clean Architecture layering. The repository is an early-stage scaffold: the project layout, dependencies, and `Program.cs` wiring exist, but most layers contain only empty `.gitkeep` folders waiting to be filled in.
+Lumen is a .NET 10 ASP.NET Core Web API following a Clean Architecture layering. Identity and admin seeding are set up; most domain layers are still empty and ready to be filled in.
 
 ## Commands
 
@@ -25,10 +25,26 @@ Four projects under `src/`, with dependencies pointing inward (Clean Architectur
 
 - **Lumen.Domain** — entities, value objects, enums, domain exceptions. No dependencies.
 - **Lumen.Application** — DTOs, service interfaces/implementations, AutoMapper profiles. Depends on Domain.
-- **Lumen.Infrastructure** — EF Core data access (`LumenDbContext`), repositories, infrastructure services. Depends on Application + Domain. Uses Npgsql (PostgreSQL); EF migrations live here.
+- **Lumen.Infrastructure** — EF Core data access (`AppDbContext`), repositories, infrastructure services, Identity types. Depends on Application + Domain. Uses Npgsql (PostgreSQL); EF migrations live here.
 - **Lumen.API** — controllers, middleware, composition root (`Program.cs`). Depends on Infrastructure + Application.
 
 `tests/Lumen.Tests` is an xUnit project (Moq, `Microsoft.AspNetCore.Mvc.Testing`, coverlet). It currently references only `Lumen.Application`; add project references as you add tests for other layers.
+
+## Identity & Auth
+
+- **Package**: `Microsoft.AspNetCore.Identity.EntityFrameworkCore` in `Lumen.Infrastructure`
+- **User entity**: `ApplicationUser : IdentityUser` lives in `src/Lumen.Infrastructure/Identity/` — never in Domain or Application
+- **DbContext**: `AppDbContext : IdentityDbContext<ApplicationUser>` — call `base.OnModelCreating` before `ApplyConfigurationsFromAssembly`
+- **Registration**: `AddIdentityCore<ApplicationUser>` (not `AddIdentity`) — JWT API, no cookies or sign-in manager
+- **User management abstraction**: `IIdentityService` in Application, `IdentityService` in Infrastructure — writes go through `UserManager`, complex reads go through `AppDbContext`; never a `UserRepository` (UserManager already is the user repository)
+- **Admin bootstrap**: `AdminSeeder` runs at startup via a scoped DI scope in `Program.cs` before `app.Run()`; idempotent — checks DB first
+
+## Secrets & Configuration
+
+- Never put passwords or credentials in `appsettings.json` — leave them empty or omit the key entirely
+- Dev credentials: `dotnet user-secrets set` — stored outside the repo at `~/.microsoft/usersecrets/<UserSecretsId>/secrets.json`
+- Production credentials: environment variables using `__` as the key separator (e.g. `AdminSeed__Password`)
+- User secrets only load when `ASPNETCORE_ENVIRONMENT=Development` — `launchSettings.json` sets this automatically for `dotnet run`
 
 
 <!-- SPECKIT START -->

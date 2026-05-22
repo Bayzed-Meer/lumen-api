@@ -48,6 +48,23 @@ paths:
 - `dotnet build` must pass with zero warnings — warnings are treated as errors
 - `dotnet test` must pass with zero failures before any commit
 
+## ASP.NET Core Identity
+
+- Use `AddIdentityCore<ApplicationUser>` not `AddIdentity` — APIs are JWT-only; `AddIdentity` adds cookie/UI overhead that is not needed
+- Chain `.AddRoles<IdentityRole>().AddEntityFrameworkStores<AppDbContext>()` to register `RoleManager` and EF stores
+- `ApplicationUser` must live in `Lumen.Infrastructure` — it extends `IdentityUser` which is a framework type; Domain must stay dependency-free
+- Always go through `UserManager` for user writes (create, password change, role assignment) — never write to `AspNetUsers` directly via `DbContext`; bypassing `UserManager` breaks password hashing and security stamps
+- Use `DbContext` directly for complex user read queries (filtering, pagination, joins) — `UserManager` does not expose `IQueryable`
+- Expose user operations to Application layer via `IIdentityService` (Application) / `IdentityService` (Infrastructure) — never reference `UserManager` from Application or API layers
+- Do not create a `UserRepository` — `UserManager` is already the user repository abstraction
+
+## Secrets & Configuration
+
+- Never commit passwords or credentials — leave keys empty or absent in `appsettings.json`
+- Dev: use `dotnet user-secrets set` — stored at `~/.microsoft/usersecrets/<UserSecretsId>/secrets.json`, never committed
+- Prod: use environment variables with `__` as key separator (e.g. `AdminSeed__Password=...`)
+- User secrets only load when `ASPNETCORE_ENVIRONMENT=Development` — ensure `launchSettings.json` sets this for `dotnet run`
+
 ## Error Handling
 - Use `ILogger<T>` for all logging — never `Console.WriteLine` in production code
 - Throw specific exception types — not `Exception` directly
