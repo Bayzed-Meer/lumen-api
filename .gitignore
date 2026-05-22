@@ -1,0 +1,73 @@
+## .NET
+*.swp
+*.*~
+project.lock.json
+.DS_Store
+*.pyc
+nupkg/
+
+## Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+*.userprefs
+*.usertasks
+
+## JetBrains Rider
+*.sln.iml
+
+## VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+## NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+!packages/repositories.config
+*.nuget.props
+*.nuget.targets
+project.nuget.cache
+
+## Secrets / environment
+appsettings.*.local.json
+*.env
+.env
+secrets.json
+
+## EF Core migrations snapshot (keep migrations, ignore some tooling artifacts)
+*.efbundle
+
+## Test results
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+## macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+.mcp.json
