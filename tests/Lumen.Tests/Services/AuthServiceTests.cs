@@ -34,7 +34,7 @@ public class AuthServiceTests
     {
         _identityService.Setup(x => x.ResolveUserIdAsync("user@uni.edu", It.IsAny<CancellationToken>()))
             .ReturnsAsync("uid-1");
-        _identityService.Setup(x => x.CheckPasswordAsync("uid-1", "P@ssword1", It.IsAny<CancellationToken>()))
+        _identityService.Setup(x => x.CheckPasswordAsync("uid-1", "test-only", It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         _identityService.Setup(x => x.IsVerifiedAsync("uid-1", It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
@@ -47,7 +47,7 @@ public class AuthServiceTests
         _tokenService.Setup(x => x.GenerateRefreshToken())
             .Returns("raw-refresh-token");
 
-        var (response, rawRefreshToken) = await _sut.LoginAsync(new LoginRequest { Identity = "user@uni.edu", Password = "P@ssword1" });
+        var (response, rawRefreshToken) = await _sut.LoginAsync(new LoginRequest { Identity = "user@uni.edu", Password = "test-only" });
 
         Assert.Equal("access-token", response.AccessToken);
         Assert.Equal("raw-refresh-token", rawRefreshToken);
@@ -61,7 +61,7 @@ public class AuthServiceTests
     {
         _identityService.Setup(x => x.ResolveUserIdAsync("STU-001", It.IsAny<CancellationToken>()))
             .ReturnsAsync("uid-2");
-        _identityService.Setup(x => x.CheckPasswordAsync("uid-2", "P@ssword1", It.IsAny<CancellationToken>()))
+        _identityService.Setup(x => x.CheckPasswordAsync("uid-2", "test-only", It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         _identityService.Setup(x => x.IsVerifiedAsync("uid-2", It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
@@ -74,7 +74,7 @@ public class AuthServiceTests
         _tokenService.Setup(x => x.GenerateRefreshToken())
             .Returns("raw-refresh");
 
-        var (response, _) = await _sut.LoginAsync(new LoginRequest { Identity = "STU-001", Password = "P@ssword1" });
+        var (response, _) = await _sut.LoginAsync(new LoginRequest { Identity = "STU-001", Password = "test-only" });
 
         Assert.Equal("access-token", response.AccessToken);
     }
@@ -84,13 +84,13 @@ public class AuthServiceTests
     {
         _identityService.Setup(x => x.ResolveUserIdAsync("user@uni.edu", It.IsAny<CancellationToken>()))
             .ReturnsAsync("uid-3");
-        _identityService.Setup(x => x.CheckPasswordAsync("uid-3", "P@ssword1", It.IsAny<CancellationToken>()))
+        _identityService.Setup(x => x.CheckPasswordAsync("uid-3", "test-only", It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
         _identityService.Setup(x => x.IsVerifiedAsync("uid-3", It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
         await Assert.ThrowsAsync<UnauthorizedException>(
-            () => _sut.LoginAsync(new LoginRequest { Identity = "user@uni.edu", Password = "P@ssword1" }));
+            () => _sut.LoginAsync(new LoginRequest { Identity = "user@uni.edu", Password = "test-only" }));
     }
 
     [Fact]
@@ -112,7 +112,7 @@ public class AuthServiceTests
             .ReturnsAsync((string?)null);
 
         await Assert.ThrowsAsync<UnauthorizedException>(
-            () => _sut.LoginAsync(new LoginRequest { Identity = "ghost@uni.edu", Password = "P@ssword1" }));
+            () => _sut.LoginAsync(new LoginRequest { Identity = "ghost@uni.edu", Password = "test-only" }));
     }
 
     // ── LogoutAsync ─────────────────────────────────────────────────────────

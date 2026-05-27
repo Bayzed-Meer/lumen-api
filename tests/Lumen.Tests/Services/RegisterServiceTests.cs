@@ -30,7 +30,7 @@ public class RegisterServiceTests
             Email = "student@uni.edu",
             FirstName = "Alice",
             LastName = "Smith",
-            Password = "P@ssword1",
+            Password = "test-only",
             Role = "Student",
             InstitutionalId = "STU-001"
         };
@@ -61,7 +61,7 @@ public class RegisterServiceTests
             Email = "existing@uni.edu",
             FirstName = "Bob",
             LastName = "Jones",
-            Password = "P@ssword1",
+            Password = "test-only",
             Role = "Faculty",
             InstitutionalId = "FAC-001"
         };
@@ -80,7 +80,7 @@ public class RegisterServiceTests
             Email = "new@uni.edu",
             FirstName = "Carol",
             LastName = "Lee",
-            Password = "P@ssword1",
+            Password = "test-only",
             Role = "Librarian",
             InstitutionalId = "LIB-001"
         };
@@ -101,7 +101,7 @@ public class RegisterServiceTests
             Email = "student@uni.edu",
             FirstName = "Alice",
             LastName = "Smith",
-            Password = "P@ssword1",
+            Password = "test-only",
             Role = "Student",
             InstitutionalId = "STU-002"
         };
@@ -123,7 +123,7 @@ public class RegisterServiceTests
             Email = "student@uni.edu",
             FirstName = "Alice",
             LastName = "Smith",
-            Password = "P@ssword1",
+            Password = "test-only",
             Role = "Student",
             InstitutionalId = "STU-003"
         };
@@ -150,7 +150,7 @@ public class RegisterServiceTests
             Email = "student@uni.edu",
             FirstName = "Alice",
             LastName = "Smith",
-            Password = "P@ssword1",
+            Password = "test-only",
             Role = "Student",
             InstitutionalId = "STU-004"
         };
@@ -179,7 +179,7 @@ public class RegisterServiceTests
             Email = "stu@uni.edu",
             FirstName = "Dan",
             LastName = "Fox",
-            Password = "P@ssword1",
+            Password = "test-only",
             Role = "Student",
             InstitutionalId = "STU-005"
         };
@@ -199,7 +199,7 @@ public class RegisterServiceTests
             Email = "fac@uni.edu",
             FirstName = "Eve",
             LastName = "Stone",
-            Password = "P@ssword1",
+            Password = "test-only",
             Role = "Faculty",
             InstitutionalId = "FAC-005"
         };
@@ -219,7 +219,7 @@ public class RegisterServiceTests
             Email = "lib2@uni.edu",
             FirstName = "Frank",
             LastName = "Hill",
-            Password = "P@ssword1",
+            Password = "test-only",
             Role = "Librarian",
             InstitutionalId = "LIB-005"
         };
