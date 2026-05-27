@@ -8,14 +8,18 @@ paths:
 
 ## General C# Style
 - Use explicit access modifiers on all members (`public`, `private`, `protected`, `internal`)
-- Use `var` only when the type is obvious from the right-hand side
+- Use `var` only when the type is obvious from the right-hand side (e.g. `new`, casts, literals) — use explicit types when the right-hand side is a method call whose return type isn't immediately clear
 - MUST use `async`/`await` for all I/O — never `.Result`, `.Wait()`, or raw `Task` continuations (causes deadlocks in ASP.NET Core)
 - Use `ConfigureAwait(false)` in library/infrastructure code; not needed in controller/application code
-- Prefer records for immutable DTOs and value objects
-- Use `required` properties instead of nullable types for mandatory fields
+- Use property-based records for all DTOs (both request and response) — never positional records (property names at the call site prevent argument-order mistakes)
+- Use `required` with `init` for all DTO properties: `public required string Foo { get; init; }`
+- Each data annotation attribute must be on its own line above the property — never inline on the same line as the property
 - Use `file`-scoped namespaces: `namespace Librify.Api.Features.Books;`
 - Default to writing no comments; add one only when the _why_ is non-obvious (hidden constraint, workaround, subtle invariant)
 - No premature abstractions — YAGNI: three similar lines are better than a wrong abstraction; do not build for hypothetical future requirements
+
+## Member Ordering
+- Within a class, order members: private fields and constants first, then public members, methods last
 
 ## Naming Conventions
 - Types, methods, properties: `PascalCase`
@@ -31,11 +35,14 @@ paths:
 - Use `[ProducesResponseType]` for all expected status codes
 - Validate with `[Required]`, `[MaxLength]`, `[Range]` — never validate manually in controllers
 - Return `Problem()` / `ValidationProblem()` for errors, not custom error objects
+- For 201 responses, use `Created(string.Empty, response)` — do not use `CreatedAtAction`; we do not emit `Location` headers
+- Do not use `[AllowAnonymous]` unless overriding a class-level or global `[Authorize]` policy — endpoints without `[Authorize]` are already anonymous by default
 
 ## Dependency Injection
 - Register services in `Program.cs` or dedicated extension methods — never use `new`
 - Prefer constructor injection; use `[FromServices]` in minimal API handlers
 - Scope services appropriately: `Singleton` for stateless, `Scoped` for per-request, `Transient` for lightweight
+- Use C# 12 primary constructors and reference the parameter directly — do not add a `private readonly` field assignment (e.g. `private readonly IFoo _foo = foo;`)
 
 ## EF Core
 - Never expose `DbContext` outside the data layer — use repositories or direct service injection
@@ -57,6 +64,13 @@ paths:
 - Use `DbContext` directly for complex user read queries (filtering, pagination, joins) — `UserManager` does not expose `IQueryable`
 - Expose user operations to Application layer via `IIdentityService` (Application) / `IdentityService` (Infrastructure) — never reference `UserManager` from Application or API layers
 - Do not create a `UserRepository` — `UserManager` is already the user repository abstraction
+
+## Configuration & Options
+- Never inject `IConfiguration` into services — use strongly-typed options classes instead
+- Create a `sealed` options class with a `SectionName` constant, `required` properties, and `[Required]`/`[Range]` data annotations
+- Register with `.AddOptions<T>().BindConfiguration(T.SectionName).ValidateDataAnnotations().ValidateOnStart()` — fails at startup on misconfiguration
+- Inject `IOptions<T>` in services that only need the value at construction time
+- `IConfiguration` is allowed only in `DependencyInjection.cs` (composition root) for wiring up infrastructure that cannot use `IOptions<T>` directly (e.g. `AddJwtBearer`, `AddDbContext`)
 
 ## Secrets & Configuration
 
