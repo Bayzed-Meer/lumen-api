@@ -1,4 +1,5 @@
 using Lumen.Domain.Entities;
+using Lumen.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -15,6 +16,13 @@ public sealed class OtpRecordConfiguration : IEntityTypeConfiguration<OtpRecord>
 
         builder.Property(o => o.CodeHash)
             .IsRequired();
+
+        builder.Property(o => o.Purpose)
+            .HasConversion<int>()
+            .HasDefaultValue(OtpPurpose.Registration);
+
+        builder.Property(o => o.IsUsed)
+            .HasDefaultValue(false);
 
         builder.HasIndex(o => o.UserId);
 

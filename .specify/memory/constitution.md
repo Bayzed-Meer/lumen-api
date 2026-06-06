@@ -55,8 +55,9 @@ EF Core migrations MUST live in the Infrastructure project and be applied via th
 JWT (JSON Web Tokens) is the ONLY authentication mechanism. External identity providers
 (e.g. Auth0, Azure AD, Okta, IdentityServer) are NOT permitted.
 
-All protected endpoints MUST carry an `[Authorize]` attribute. Anonymous access MUST be
-explicitly declared with `[AllowAnonymous]` — implicit open access is PROHIBITED.
+All protected endpoints MUST carry an `[Authorize]` attribute. Endpoints without `[Authorize]`
+are anonymous by default — do not add `[AllowAnonymous]` unless overriding a class-level or
+global `[Authorize]` policy.
 
 JWT configuration (issuer, audience, signing key) MUST be supplied via `appsettings` or
 environment variables and MUST NOT be hardcoded.

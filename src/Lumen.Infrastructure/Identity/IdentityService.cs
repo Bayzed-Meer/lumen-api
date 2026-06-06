@@ -5,7 +5,6 @@ using Lumen.Domain.Enums;
 using Lumen.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Lumen.Infrastructure.Identity;
 
@@ -22,8 +21,6 @@ public sealed class IdentityService(
         string institutionalId,
         CancellationToken ct = default)
     {
-        await using IDbContextTransaction transaction = await dbContext.Database.BeginTransactionAsync(ct).ConfigureAwait(false);
-
         ApplicationUser user = new()
         {
             UserName = email,
@@ -37,7 +34,7 @@ public sealed class IdentityService(
         IdentityResult result = await userManager.CreateAsync(user, password).ConfigureAwait(false);
         if (!result.Succeeded)
         {
-            Dictionary<string, string[]> errors = result.Errors.ToDictionary(
+            var errors = result.Errors.ToDictionary(
                 e => e.Code,
                 e => new[] { e.Description });
             throw new ValidationException(errors);
@@ -46,7 +43,7 @@ public sealed class IdentityService(
         IdentityResult roleResult = await userManager.AddToRoleAsync(user, role.ToString()).ConfigureAwait(false);
         if (!roleResult.Succeeded)
         {
-            Dictionary<string, string[]> errors = roleResult.Errors.ToDictionary(
+            var errors = roleResult.Errors.ToDictionary(
                 e => e.Code,
                 e => new[] { e.Description });
             throw new ValidationException(errors);
@@ -67,17 +64,49 @@ public sealed class IdentityService(
                 throw new InvalidOperationException($"Unhandled ProfileRole: {role}");
         }
 
-        await dbContext.SaveChangesAsync(ct).ConfigureAwait(false);
-        await transaction.CommitAsync(ct).ConfigureAwait(false);
-
         return user.Id;
+    }
+
+    public async Task<bool> IsVerifiedAsync(string userId, CancellationToken ct = default)
+    {
+        return await dbContext.Users
+            .AsNoTracking()
+            .Where(u => u.Id == userId)
+            .Select(u => u.IsVerified)
+            .FirstOrDefaultAsync(ct)
+            .ConfigureAwait(false);
+    }
+
+    public async Task SetVerifiedAsync(string userId, CancellationToken ct = default)
+    {
+        ApplicationUser user = await userManager.FindByIdAsync(userId).ConfigureAwait(false)
+            ?? throw new NotFoundException("User", userId);
+
+        user.IsVerified = true;
+
+        IdentityResult result = await userManager.UpdateAsync(user).ConfigureAwait(false);
+        if (!result.Succeeded)
+        {
+            var errors = result.Errors.ToDictionary(e => e.Code, e => new[] { e.Description });
+            throw new ValidationException(errors);
+        }
+    }
+
+    public async Task<string?> ResolveUserIdAsync(string identity, CancellationToken ct = default)
+    {
+        string? userId = await FindUserByEmailAsync(identity, ct).ConfigureAwait(false);
+        if (userId is not null)
+            return userId;
+
+        return await FindUserByInstitutionalIdAsync(identity, ct).ConfigureAwait(false);
     }
 
     public async Task<string?> FindUserByEmailAsync(string email, CancellationToken ct = default)
     {
+        string normalizedEmail = email.ToUpperInvariant();
         string? userId = await dbContext.Users
             .AsNoTracking()
-            .Where(u => u.NormalizedEmail == email.ToUpperInvariant())
+            .Where(u => u.NormalizedEmail == normalizedEmail)
             .Select(u => u.Id)
             .FirstOrDefaultAsync(ct)
             .ConfigureAwait(false);
@@ -117,15 +146,6 @@ public sealed class IdentityService(
         return librarianUserId;
     }
 
-    public async Task<string?> ResolveUserIdAsync(string identity, CancellationToken ct = default)
-    {
-        string? userId = await FindUserByEmailAsync(identity, ct).ConfigureAwait(false);
-        if (userId is not null)
-            return userId;
-
-        return await FindUserByInstitutionalIdAsync(identity, ct).ConfigureAwait(false);
-    }
-
     public async Task<string> GetUserEmailAsync(string userId, CancellationToken ct = default)
     {
         string? email = await dbContext.Users
@@ -136,15 +156,6 @@ public sealed class IdentityService(
             .ConfigureAwait(false);
 
         return email ?? throw new NotFoundException("User", userId);
-    }
-
-    public async Task<bool> CheckPasswordAsync(string userId, string password, CancellationToken ct = default)
-    {
-        ApplicationUser? user = await userManager.FindByIdAsync(userId).ConfigureAwait(false);
-        if (user is null)
-            return false;
-
-        return await userManager.CheckPasswordAsync(user, password).ConfigureAwait(false);
     }
 
     public async Task<UserRole> GetUserRoleAsync(string userId, CancellationToken ct = default)
@@ -165,24 +176,35 @@ public sealed class IdentityService(
         return role;
     }
 
-    public async Task<bool> IsVerifiedAsync(string userId, CancellationToken ct = default)
+    public async Task<bool> CheckPasswordAsync(string userId, string password, CancellationToken ct = default)
     {
-        return await dbContext.Users
-            .AsNoTracking()
-            .Where(u => u.Id == userId)
-            .Select(u => u.IsVerified)
-            .FirstOrDefaultAsync(ct)
-            .ConfigureAwait(false);
+        ApplicationUser? user = await userManager.FindByIdAsync(userId).ConfigureAwait(false);
+        if (user is null)
+            return false;
+
+        return await userManager.CheckPasswordAsync(user, password).ConfigureAwait(false);
     }
 
-    public async Task SetVerifiedAsync(string userId, CancellationToken ct = default)
+    public async Task ChangePasswordAsync(string userId, string currentPassword, string newPassword, CancellationToken ct = default)
     {
         ApplicationUser user = await userManager.FindByIdAsync(userId).ConfigureAwait(false)
             ?? throw new NotFoundException("User", userId);
 
-        user.IsVerified = true;
+        IdentityResult result = await userManager.ChangePasswordAsync(user, currentPassword, newPassword).ConfigureAwait(false);
+        if (!result.Succeeded)
+        {
+            var errors = result.Errors.ToDictionary(e => e.Code, e => new[] { e.Description });
+            throw new ValidationException(errors);
+        }
+    }
 
-        IdentityResult result = await userManager.UpdateAsync(user).ConfigureAwait(false);
+    public async Task ResetPasswordAsync(string userId, string newPassword, CancellationToken ct = default)
+    {
+        ApplicationUser user = await userManager.FindByIdAsync(userId).ConfigureAwait(false)
+            ?? throw new NotFoundException("User", userId);
+
+        await userManager.RemovePasswordAsync(user).ConfigureAwait(false);
+        IdentityResult result = await userManager.AddPasswordAsync(user, newPassword).ConfigureAwait(false);
         if (!result.Succeeded)
         {
             var errors = result.Errors.ToDictionary(e => e.Code, e => new[] { e.Description });

@@ -1,8 +1,8 @@
+using Lumen.API.Extensions;
 using Lumen.API.Middleware;
 using Lumen.Application;
 using Lumen.Infrastructure;
 using Lumen.Infrastructure.Identity;
-
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
@@ -17,6 +17,7 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddAuthorization();
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddRateLimiting();
 
 var app = builder.Build();
 
@@ -37,6 +38,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 app.MapControllers();
 
 app.Run();
