@@ -7,21 +7,19 @@ namespace Lumen.Infrastructure.Repositories;
 
 public sealed class RefreshTokenRepository(AppDbContext dbContext) : IRefreshTokenRepository
 {
-    public async Task AddAsync(
+    public Task AddAsync(
         string tokenHash,
         string userId,
         DateTimeOffset expiresAt,
         CancellationToken ct = default)
     {
-        RefreshToken token = new()
+        dbContext.RefreshTokens.Add(new RefreshToken
         {
             UserId = userId,
             TokenHash = tokenHash,
             ExpiresAt = expiresAt
-        };
-
-        dbContext.RefreshTokens.Add(token);
-        await dbContext.SaveChangesAsync(ct).ConfigureAwait(false);
+        });
+        return Task.CompletedTask;
     }
 
     public async Task<RefreshTokenInfo?> GetByTokenHashAsync(string tokenHash, CancellationToken ct = default)
@@ -36,18 +34,24 @@ public sealed class RefreshTokenRepository(AppDbContext dbContext) : IRefreshTok
 
     public async Task RevokeAsync(string tokenHash, CancellationToken ct = default)
     {
-        await dbContext.RefreshTokens
+        RefreshToken? token = await dbContext.RefreshTokens
             .Where(r => r.TokenHash == tokenHash)
-            .ExecuteUpdateAsync(s => s.SetProperty(r => r.IsRevoked, true), ct)
+            .FirstOrDefaultAsync(ct)
             .ConfigureAwait(false);
+
+        if (token is not null)
+            token.IsRevoked = true;
     }
 
     public async Task RevokeAllForUserAsync(string userId, CancellationToken ct = default)
     {
-        await dbContext.RefreshTokens
+        List<RefreshToken> tokens = await dbContext.RefreshTokens
             .Where(r => r.UserId == userId && !r.IsRevoked)
-            .ExecuteUpdateAsync(s => s.SetProperty(r => r.IsRevoked, true), ct)
+            .ToListAsync(ct)
             .ConfigureAwait(false);
+
+        foreach (RefreshToken token in tokens)
+            token.IsRevoked = true;
     }
 
     public async Task DeleteExpiredAsync(CancellationToken ct = default)

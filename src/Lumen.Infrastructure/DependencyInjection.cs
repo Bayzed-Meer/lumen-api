@@ -91,8 +91,10 @@ public static class DependencyInjection
         services.AddScoped<IEmailService, SmtpEmailService>();
         services.AddScoped<IOtpRepository, OtpRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<AdminSeeder>();
         services.AddHostedService<RefreshTokenCleanupService>();
+        services.AddHostedService<OtpCleanupService>();
 
         return services;
     }

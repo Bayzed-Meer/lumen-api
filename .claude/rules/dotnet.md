@@ -50,6 +50,45 @@ paths:
 - Never use raw SQL string interpolation — use `FromSqlInterpolated` or parameterized `ExecuteSqlRaw`
 - Always handle `DbUpdateConcurrencyException` where optimistic concurrency applies
 
+## Transactions (IUnitOfWork)
+
+Any service method that performs two or more DB writes that must succeed or fail together **must** wrap them in a transaction using `IUnitOfWork`.
+
+**Interface** (`Lumen.Application/Common/Interfaces/IUnitOfWork.cs`):
+```csharp
+public interface IUnitOfWork
+{
+    Task BeginTransactionAsync(CancellationToken ct = default);
+    Task CommitAsync(CancellationToken ct = default);
+    Task RollbackAsync(CancellationToken ct = default);
+}
+```
+
+**Implementation** (`Lumen.Infrastructure/Data/UnitOfWork.cs`) wraps `AppDbContext.Database.BeginTransactionAsync`. Register as `Scoped`.
+
+**Usage pattern** — always use try/catch, never leave a transaction open:
+```csharp
+await unitOfWork.BeginTransactionAsync(ct);
+try
+{
+    await repoA.WriteAsync(..., ct);
+    await repoB.WriteAsync(..., ct);
+    await unitOfWork.CommitAsync(ct);
+}
+catch
+{
+    await unitOfWork.RollbackAsync(ct);
+    throw;
+}
+```
+
+**Key rules:**
+- All repositories and `UserManager` share the same scoped `AppDbContext`, so one `IUnitOfWork` transaction covers all of them — including `ExecuteUpdateAsync`/`ExecuteDeleteAsync` bulk operations
+- Perform reads **before** `BeginTransactionAsync` to keep transaction duration short
+- Send emails, push notifications, or call external APIs **after** `CommitAsync` — external side effects must never gate the DB commit
+- `IdentityService.CreateUserAsync` does **not** manage its own transaction — wrap calls to it in `IUnitOfWork.ExecuteInTransactionAsync` alongside any other writes that must be atomic with user creation (e.g. OTP records)
+- In unit tests, mock `IUnitOfWork.SaveChangesAsync` as a no-op and mock `ExecuteInTransactionAsync` overloads to invoke the delegate directly
+
 ## Build Quality
 
 - `dotnet build` must pass with zero warnings — warnings are treated as errors

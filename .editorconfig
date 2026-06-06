@@ -50,6 +50,15 @@ csharp_preserve_single_line_blocks = true
 
 # ── Naming conventions ───────────────────────────────────────────────────────
 
+# Constants: PascalCase (must come before the private-field rule so it wins for const fields)
+dotnet_naming_rule.constants_should_be_pascal_case.severity = suggestion
+dotnet_naming_rule.constants_should_be_pascal_case.symbols = constants
+dotnet_naming_rule.constants_should_be_pascal_case.style = pascal_case
+
+dotnet_naming_symbols.constants.applicable_kinds = field
+dotnet_naming_symbols.constants.applicable_accessibilities = *
+dotnet_naming_symbols.constants.required_modifiers = const
+
 # Private fields: _camelCase
 dotnet_naming_rule.private_fields_should_be_camel_case.severity = suggestion
 dotnet_naming_rule.private_fields_should_be_camel_case.symbols = private_fields
@@ -122,3 +131,8 @@ dotnet_style_coalesce_expression = true:warning
 dotnet_style_prefer_simplified_boolean_expressions = true:warning
 csharp_style_unused_value_assignment_preference = discard_variable:suggestion
 dotnet_remove_unnecessary_suppression_exclusions = none
+
+# ── Diagnostic suppressions ──────────────────────────────────────────────────
+
+# CA1848: Use LoggerMessage.Define — overkill for non-hot-path service calls
+dotnet_diagnostic.CA1848.severity = none

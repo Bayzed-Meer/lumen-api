@@ -22,4 +22,6 @@ public interface IIdentityService
     Task<UserRole> GetUserRoleAsync(string userId, CancellationToken ct = default);
     Task<bool> IsVerifiedAsync(string userId, CancellationToken ct = default);
     Task SetVerifiedAsync(string userId, CancellationToken ct = default);
+    Task ChangePasswordAsync(string userId, string currentPassword, string newPassword, CancellationToken ct = default);
+    Task ResetPasswordAsync(string userId, string newPassword, CancellationToken ct = default);
 }

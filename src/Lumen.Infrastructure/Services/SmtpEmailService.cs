@@ -9,16 +9,22 @@ namespace Lumen.Infrastructure.Services;
 
 public sealed class SmtpEmailService(IOptions<SmtpSettings> options) : IEmailService
 {
-    public async Task SendOtpEmailAsync(string recipient, string otp, CancellationToken ct = default)
+    public Task SendRegistrationOtpAsync(string recipient, string otp, CancellationToken ct = default) =>
+        SendAsync(recipient, "Your Lumen verification code", otp, ct);
+
+    public Task SendPasswordResetOtpAsync(string recipient, string otp, CancellationToken ct = default) =>
+        SendAsync(recipient, "Your Lumen password reset code", otp, ct);
+
+    private async Task SendAsync(string recipient, string subject, string otp, CancellationToken ct)
     {
         MimeMessage message = new();
         message.From.Add(new MailboxAddress(options.Value.FromName, options.Value.FromAddress));
         message.To.Add(MailboxAddress.Parse(recipient));
-        message.Subject = "Your Lumen verification code";
+        message.Subject = subject;
 
         message.Body = new TextPart("plain")
         {
-            Text = $"Your one-time verification code is: {otp}\n\nThis code expires in 10 minutes."
+            Text = $"Your one-time code is: {otp}\n\nThis code expires in 10 minutes."
         };
 
         using SmtpClient client = new();
